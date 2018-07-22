@@ -106,7 +106,7 @@ func (h *honeycombWriter) Write(b []byte) (int, error) {
 	// Tendermint seems to shove a blob of json into _msg, so we check for that case
 	if m, ok := data["_msg"]; ok {
 		var vm map[string]interface{}
-		err := json.Unmarshal(m.([]byte), &vm)
+		err := json.Unmarshal([]byte(m.(string)), &vm)
 		if err == nil {
 			for k, v := range vm {
 				data[k] = v
