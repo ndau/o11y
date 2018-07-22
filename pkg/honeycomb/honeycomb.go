@@ -72,9 +72,9 @@ func newLogrusHook() (logrus.Hook, error) {
 	return &honeycombHook{}, nil
 }
 
-// SetupHoneycomb sets up a logrus logger to send its data to honeycomb instead of
+// Setup sets up a logrus logger to send its data to honeycomb instead of
 // sending it to stdout.
-func SetupHoneycomb(logger *logrus.Logger) *logrus.Logger {
+func Setup(logger *logrus.Logger) *logrus.Logger {
 	honeycombLoggingHook, err := newLogrusHook()
 	if err != nil {
 		logger.Warn(err)
