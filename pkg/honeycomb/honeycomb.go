@@ -98,13 +98,24 @@ type honeycombWriter struct{}
 // and unmarshals it into an interface{}, then simply sends that as a new event
 // to honeycomb.
 func (h *honeycombWriter) Write(b []byte) (int, error) {
-	var v interface{}
-	err := json.Unmarshal(b, &v)
+	var data map[string]interface{}
+	err := json.Unmarshal(b, &data)
 	if err != nil {
 		return 0, err
 	}
+	// Tendermint seems to shove a blob of json into _msg, so we check for that case
+	if m, ok := data["_msg"]; ok {
+		var vm map[string]interface{}
+		err := json.Unmarshal(m.([]byte), &vm)
+		if err == nil {
+			for k, v := range vm {
+				data[k] = v
+			}
+		}
+	}
+
 	evt := libhoney.NewBuilder().NewEvent()
-	err = evt.Add(v)
+	err = evt.Add(data)
 	if err != nil {
 		return 0, err
 	}
