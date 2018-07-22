@@ -79,6 +79,7 @@ func Setup(logger *logrus.Logger) *logrus.Logger {
 	if err != nil {
 		logger.Warn(err)
 		logger.Warn("Honeycomb failed to initialize properly - did you set HONEYCOMB_KEY and HONEYCOMB_DATASET?")
+		return logger
 	}
 
 	registerLogrusOnce.Do(func() {
