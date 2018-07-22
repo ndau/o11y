@@ -78,7 +78,7 @@ func Setup(logger *logrus.Logger) *logrus.Logger {
 	honeycombLoggingHook, err := newLogrusHook()
 	if err != nil {
 		logger.Warn(err)
-		logger.Warn("Honeycomb failed to initialize properly - did you set HONEYCOMB_KEY and HONEYCOMB_DATASET?")
+		logger.Warn("Honeycomb failed to initialize properly - did you set HONEYCOMB_KEY and HONEYCOMB_DATASET? Not changing logger.")
 		return logger
 	}
 
