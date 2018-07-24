@@ -114,8 +114,6 @@ func (h *honeycombWriter) Write(b []byte) (int, error) {
 				data[k] = v
 			}
 			delete(data, "_msg")
-		} else {
-			data["parseError"] = err.Error()
 		}
 	}
 
@@ -124,12 +122,6 @@ func (h *honeycombWriter) Write(b []byte) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-
-	keys := ""
-	for k := range data {
-		keys += k + "\n"
-	}
-	evt.AddField("keys", keys)
 
 	err = evt.Send()
 	if err != nil {
