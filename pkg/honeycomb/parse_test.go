@@ -104,6 +104,9 @@ func TestParser1(t *testing.T) {
 		fmt.Println(err)
 	}
 	assert.Nil(t, err)
+	m := result.(KV)
+	b := m["Block"].(KV)
+	assert.Equal(t, 12, b["Value"])
 	j, err := json.MarshalIndent(result, "", "  ")
 	assert.Nil(t, err)
 	fmt.Println(string(j))

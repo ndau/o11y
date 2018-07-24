@@ -45,17 +45,17 @@ Item <-
 
 Value <-
 	( Timestamp
+	/ DecimalVal
 	/ Vote
 //	/ HexVal
 	/ ID
-	/ DecimalVal
 	/ String
 	)
 
 Vote <- "Vote{" [^}]+ '}'  { return string(c.text), nil }
 
 Key <- [A-Za-z]+ { return string(c.text), nil }
-DecimalVal <- [0-9]+
+DecimalVal <- [0-9]+ ![A-Za-z]
 	{
 		x, err := strconv.Atoi(string(c.text))
 		return x, err
