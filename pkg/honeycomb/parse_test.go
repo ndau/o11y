@@ -59,6 +59,45 @@ func TestParserReal2(t *testing.T) {
 	fmt.Println(string(j))
 }
 
+func TestParserReal3(t *testing.T) {
+	s := `Signed proposal block: Block{
+  Header{
+    ChainID:        test-chain-iJi4GI
+    Height:         147
+    Time:           2018-07-24 01:59:19.3291515 +0000 UTC m=+152.738559201
+    NumTxs:         0
+    TotalTxs:       0
+    LastBlockID:    F6FB7A3EB80E019576CC0CB27CF4F541C4489E95:1:B227F23E2EF3
+    LastCommit:     90668CBB56DBD35DF28FBF1B081DAD31BD5ACE89
+    Data:
+    Validators:     4B03B8BE3CD7224168C5719F3F20E8E61B763C97
+    App:            27ED75B582749EFE2431B92848A7D5901814779A
+    Consensus:       D6B74BB35BDFFD8392340F2A379173548AE188FE
+    Results:
+    Evidence:
+  }#B6145238AC15387E425DEC7AB06FF2FF785FF358
+  Data{
+
+  }#
+  EvidenceData{
+
+  }#
+  Commit{
+    BlockID:    F6FB7A3EB80E019576CC0CB27CF4F541C4489E95:1:B227F23E2EF3
+    Precommits: Vote{0:B5C7AEB1164D 146/00/2(Precommit) F6FB7A3EB80E /7D0D93F0471D.../ @ 2018-07-24T01:59:18.321Z}
+  }#90668CBB56DBD35DF28FBF1B081DAD31BD5ACE89
+}#B6145238AC15387E425DEC7AB06FF2FF785FF358`
+
+	result, err := Parse("Parser1", []byte(s), Debug(false))
+	if err != nil {
+		fmt.Println(err)
+	}
+	assert.Nil(t, err)
+	j, err := json.MarshalIndent(result, "", "  ")
+	assert.Nil(t, err)
+	fmt.Println(string(j))
+}
+
 func TestParser1(t *testing.T) {
 	result, err := Parse("Parser1", []byte("Block{\nValue: 12\n}#"), Debug(false))
 	if err != nil {

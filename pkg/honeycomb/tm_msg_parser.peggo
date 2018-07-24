@@ -2,7 +2,7 @@
 	package honeycomb
 }
 
-Data <- gs:Group+ EOF
+Data <- Header? gs:Group+ EOF
 {
 	parent := make(KV)
 	sl := toIfaceSlice(gs)
@@ -13,6 +13,8 @@ Data <- gs:Group+ EOF
 	}
 	return parent, nil
 }
+
+Header <- [A-Za-z0-9 ]+ ':' _
 
 Group <- _ k:Key _ '{' ia:Item* _ '}' h:Hash _ EOL*
 {
@@ -68,10 +70,19 @@ HexVal <- [0-9A-Fa-f]+
 	}
 ID <- HexVal (':' HexVal ':' HexVal)? { return string(c.text), nil }
 Timestamp <-
-	( [0-9-]+ _ [0-9:.]+ _ [0-9+]+ _ [A-Z]+ { return string(c.text), nil }
-	/ [0-9-]+ 'T' [0-9:.]+ 'Z' { return string(c.text), nil }
+	( date:Date _ time:Time _ [0-9+]+ _ [A-Z]+ _ GoofyTimestampStuff?
+		{
+			ts := date.(string) + "T" + time.(string) + "Z"
+			return ts, nil
+		}
+	/ Date 'T' Time 'Z' { return string(c.text), nil }
 	)
 String <- [A-Za-z0-9(@)/:-]+ 	{ return string(c.text), nil }
+
+Date <- [0-9-]+ 	{ return string(c.text), nil }
+Time <- [0-9:.]+ 	{ return string(c.text), nil }
+
+GoofyTimestampStuff <- "m=+" [0-9.]+
 
 _ <- [ \t]*				{ return string(c.text), nil }
 EOL <- ( "\n" / "\\n" ) { return string(c.text), nil }
