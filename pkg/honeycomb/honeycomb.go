@@ -104,14 +104,18 @@ func (h *honeycombWriter) Write(b []byte) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	// Tendermint seems to shove a blob of json into _msg, so we check for that case
+	// Tendermint seems to shove a blob of badly-formatted data into _msg, so we
+	// check for that case and try to parse it with a custom-built parser; if that
+	// works, we replace _msg with the appropriate set of parsed (possibly nested) fields
 	if m, ok := data["_msg"]; ok {
-		var vm map[string]interface{}
-		err := json.Unmarshal([]byte(m.(string)), &vm)
+		parsed, err := Parse("_msg", []byte(m.(string)))
 		if err == nil {
-			for k, v := range vm {
+			for k, v := range parsed.(KV) {
 				data[k] = v
 			}
+			delete(data, "_msg")
+		} else {
+			data["parseError"] = err.Error()
 		}
 	}
 
@@ -120,6 +124,13 @@ func (h *honeycombWriter) Write(b []byte) (int, error) {
 	if err != nil {
 		return 0, err
 	}
+
+	keys := ""
+	for k := range data {
+		keys += k + "\n"
+	}
+	evt.AddField("keys", keys)
+
 	err = evt.Send()
 	if err != nil {
 		return 0, err

@@ -1,0 +1,78 @@
+{
+	package honeycomb
+}
+
+Data <- gs:Group+ EOF
+{
+	parent := make(KV)
+	sl := toIfaceSlice(gs)
+	for _, v := range sl {
+		if g, ok := v.(Renderer); ok {
+			g.RenderTo(parent)
+		}
+	}
+	return parent, nil
+}
+
+Group <- _ k:Key _ '{' ia:Item* _ '}' h:Hash _ EOL*
+{
+	sl := toIfaceSlice(ia)
+	its := make([]Renderer, 0)
+	for _, v := range sl {
+		if it, ok := v.(Renderer); ok {
+			its = append(its, it)
+		}
+	}
+	return newGroup(k.(string), its, h.(string)), nil
+}
+
+Hash <- '#' h:HexVal?
+	{
+		if h == nil {
+			return "", nil
+		}
+		return h.(string), nil
+	}
+
+Item <-
+	(  EOL? _ g:Group  { return g, nil }
+	/  EOL? _ k:Key ':' _ v:Value? EOL  { return newItem(k.(string), v), nil }
+	/  EOL? _ EOL { return nil, nil }
+	)
+
+
+Value <-
+	( Timestamp
+	/ Vote
+//	/ HexVal
+	/ ID
+	/ DecimalVal
+	/ String
+	)
+
+Vote <- "Vote{" [^}]+ '}'  { return string(c.text), nil }
+
+Key <- [A-Za-z]+ { return string(c.text), nil }
+DecimalVal <- [0-9]+
+	{
+		x, err := strconv.Atoi(string(c.text))
+		return x, err
+	}
+HexVal <- [0-9A-Fa-f]+
+	{
+		x, err := strconv.ParseUint(string(c.text), 10, 64)
+		if err != nil {
+			return string(c.text), nil
+		}
+		return x, nil
+	}
+ID <- HexVal (':' HexVal ':' HexVal)? { return string(c.text), nil }
+Timestamp <-
+	( [0-9-]+ _ [0-9:.]+ _ [0-9+]+ _ [A-Z]+ { return string(c.text), nil }
+	/ [0-9-]+ 'T' [0-9:.]+ 'Z' { return string(c.text), nil }
+	)
+String <- [A-Za-z0-9(@)/:-]+ 	{ return string(c.text), nil }
+
+_ <- [ \t]*				{ return string(c.text), nil }
+EOL <- ( "\n" / "\\n" ) { return string(c.text), nil }
+EOF <- !.
