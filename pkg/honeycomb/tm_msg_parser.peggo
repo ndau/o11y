@@ -42,33 +42,29 @@ Item <-
 	/  EOL? _ EOL { return nil, nil }
 	)
 
+Key <- [A-Za-z]+ { return string(c.text), nil }
 
 Value <-
 	( Timestamp
 	/ DecimalVal
 	/ Vote
-//	/ HexVal
 	/ ID
+	/ HexVal
 	/ String
 	)
 
 Vote <- "Vote{" [^}]+ '}'  { return string(c.text), nil }
 
-Key <- [A-Za-z]+ { return string(c.text), nil }
 DecimalVal <- [0-9]+ ![A-Za-z]
 	{
 		x, err := strconv.Atoi(string(c.text))
 		return x, err
 	}
-HexVal <- [0-9A-Fa-f]+
-	{
-		x, err := strconv.ParseUint(string(c.text), 10, 64)
-		if err != nil {
-			return string(c.text), nil
-		}
-		return x, nil
-	}
-ID <- HexVal (':' HexVal ':' HexVal)? { return string(c.text), nil }
+
+ID <- HexVal ':' HexVal ':' HexVal { return string(c.text), nil }
+
+HexVal <- [0-9A-Fa-f]+ { return string(c.text), nil }
+
 Timestamp <-
 	( date:Date _ time:Time _ [0-9+]+ _ [A-Z]+ _ GoofyTimestampStuff?
 		{
@@ -84,6 +80,6 @@ Time <- [0-9:.]+ 	{ return string(c.text), nil }
 
 GoofyTimestampStuff <- "m=+" [0-9.]+
 
-_ <- [ \t]*				{ return string(c.text), nil }
-EOL <- ( "\n" / "\\n" ) { return string(c.text), nil }
+_ <- [ \t]*
+EOL <- ( "\n" / "\\n" )
 EOF <- !.
