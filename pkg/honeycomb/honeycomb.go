@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"io"
 	"io/ioutil"
-	"math/rand"
 	"os"
 	"sync"
 
@@ -86,10 +85,6 @@ func Setup(logger *logrus.Logger) *logrus.Logger {
 		logger.Hooks.Add(honeycombLoggingHook)
 		logger.Out = ioutil.Discard
 	})
-
-	logger.WithFields(logrus.Fields{
-		"bee_stings": rand.Int31n(10),
-	}).Info("Ouch!")
 	return logger
 }
 
