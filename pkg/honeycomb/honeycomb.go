@@ -43,9 +43,12 @@ func (hook *honeycombHook) Levels() []logrus.Level {
 var setupOnce sync.Once
 var registerLogrusOnce sync.Once
 
+// If we tried to setup honeycomb and failed, don't ever try again,
+// and make sure we still return the same error.
+var setupError error
+
 // setup initializes honeycomb by calling the Init function only once.
 func setup() error {
-	var err error
 	setupOnce.Do(func() {
 		writeKey := os.Getenv("HONEYCOMB_KEY")
 		datasetName := os.Getenv("HONEYCOMB_DATASET")
@@ -53,13 +56,13 @@ func setup() error {
 			WriteKey: writeKey,
 			Dataset:  datasetName,
 		}
-		err = libhoney.Init(cfg)
-		if err != nil {
+		setupError = libhoney.Init(cfg)
+		if setupError != nil {
 			return
 		}
-		_, err = libhoney.VerifyWriteKey(cfg)
+		_, setupError = libhoney.VerifyWriteKey(cfg)
 	})
-	return err
+	return setupError
 }
 
 // newLogrusHook returns a new Honeycomb.io logrus hook
