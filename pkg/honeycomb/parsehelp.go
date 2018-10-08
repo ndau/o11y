@@ -1,3 +1,5 @@
+// Copyright (c) 2018 Oneiro NA, Inc. All rights reserved.
+
 package honeycomb
 
 //go:generate pigeon -o tm_msg_parser.go tm_msg_parser.peggo
