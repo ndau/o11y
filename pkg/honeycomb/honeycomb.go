@@ -5,7 +5,6 @@ package honeycomb
 import (
 	"encoding/json"
 	"io"
-	"io/ioutil"
 	"os"
 	"sync"
 
@@ -88,7 +87,6 @@ func Setup(logger *logrus.Logger) *logrus.Logger {
 
 	registerLogrusOnce.Do(func() {
 		logger.Hooks.Add(honeycombLoggingHook)
-		logger.Out = ioutil.Discard
 	})
 	return logger
 }
