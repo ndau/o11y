@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"io"
 	"os"
+	"regexp"
 	"sync"
 
 	libhoney "github.com/honeycombio/libhoney-go"
@@ -103,15 +104,19 @@ func (h *honeycombWriter) Write(b []byte) (int, error) {
 		return 0, err
 	}
 	// Tendermint seems to shove a blob of badly-formatted data into _msg, so we
-	// check for that case and try to parse it with a custom-built parser; if that
-	// works, we replace _msg with the appropriate set of parsed (possibly nested) fields
+	// check for that case and try to extract key/value pairs from it.
+	// But not everything matches that way so we also keep _msg around
 	if m, ok := data["_msg"]; ok {
-		parsed, err := Parse("_msg", []byte(m.(string)))
-		if err == nil {
-			for k, v := range parsed.(KV) {
-				data[k] = v
+		// pattern for matching lines that have key: value
+		lpat := regexp.MustCompile(`^([A-Z][A-Za-z0-9]+):[ \t]*(.*[^{])$`)
+		// pattern for splitting up lines
+		spat := regexp.MustCompile(`[ \t]*\n[ \t]*`)
+		ss := spat.Split(m.(string), -1)
+		for _, s := range ss {
+			r := lpat.FindStringSubmatch(s)
+			if r != nil {
+				data[r[1]] = r[2]
 			}
-			delete(data, "_msg")
 		}
 	}
 
