@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"regexp"
+	"strconv"
 	"sync"
 
 	libhoney "github.com/honeycombio/libhoney-go"
@@ -103,23 +104,8 @@ func (h *honeycombWriter) Write(b []byte) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	// Tendermint seems to shove a blob of badly-formatted data into _msg, so we
-	// check for that case and try to extract key/value pairs from it.
-	// But not everything matches that way so we also keep _msg around
-	if m, ok := data["_msg"]; ok {
-		// pattern for matching lines that have key: value
-		lpat := regexp.MustCompile(`^([A-Z][A-Za-z0-9]+):[ \t]*(.*[^{])$`)
-		// pattern for splitting up lines
-		spat := regexp.MustCompile(`[ \t]*\n[ \t]*`)
-		ss := spat.Split(m.(string), -1)
-		for _, s := range ss {
-			r := lpat.FindStringSubmatch(s)
-			if r != nil {
-				data[r[1]] = r[2]
-			}
-		}
-	}
 
+	data = expandFieldsIn(data, "_msg")
 	evt := libhoney.NewBuilder().NewEvent()
 	err = evt.Add(data)
 	if err != nil {
@@ -144,4 +130,29 @@ func NewWriter() (io.Writer, error) {
 		return nil, err
 	}
 	return &honeycombWriter{}, nil
+}
+
+// Tendermint seems to shove a blob of badly-formatted data into _msg, so we
+// check for that case and try to extract key/value pairs from it.
+// But not everything matches that way so we also keep _msg around
+func expandFieldsIn(data map[string]interface{}, field string) map[string]interface{} {
+	if m, ok := data[field]; ok {
+		// pattern for matching lines that have key: value
+		lpat := regexp.MustCompile(`^([A-Z][A-Za-z0-9]+):[ \t]*(.*[^{])$`)
+		// pattern for splitting up lines
+		spat := regexp.MustCompile(`[ \t]*\n[ \t]*`)
+		ss := spat.Split(m.(string), -1)
+		for _, s := range ss {
+			r := lpat.FindStringSubmatch(s)
+			if r != nil {
+				n, err := strconv.Atoi(r[2])
+				if err != nil {
+					data[r[1]] = r[2]
+				} else {
+					data[r[1]] = n
+				}
+			}
+		}
+	}
+	return data
 }
