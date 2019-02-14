@@ -4,6 +4,7 @@ package honeycomb
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"os"
 	"regexp"
@@ -97,25 +98,32 @@ type honeycombWriter struct{}
 
 // Write implements io.Writer for honeycombWriter; it assumes that b is a JSON blob
 // and unmarshals it into an interface{}, then simply sends that as a new event
-// to honeycomb.
+// to honeycomb. Note that as this sends stuff in the background to Honeycomb,
+// any errors in the process are simply discarded along with the log info.
+// We throw them to stderr to give you a chance to catch them.
 func (h *honeycombWriter) Write(b []byte) (int, error) {
 	var data map[string]interface{}
-	err := json.Unmarshal(b, &data)
-	if err != nil {
-		return 0, err
-	}
+	go func(b []byte) {
+		err := json.Unmarshal(b, &data)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Err 1 in honeycombWriter.Write(): %s\n", err)
+			return
+		}
 
-	data = expandFieldsIn(data, "_msg")
-	evt := libhoney.NewBuilder().NewEvent()
-	err = evt.Add(data)
-	if err != nil {
-		return 0, err
-	}
+		data = expandFieldsIn(data, "_msg")
+		evt := libhoney.NewBuilder().NewEvent()
+		err = evt.Add(data)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Err 2 in honeycombWriter.Write(): %s\n", err)
+			return
+		}
 
-	err = evt.Send()
-	if err != nil {
-		return 0, err
-	}
+		err = evt.Send()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Err 3 in honeycombWriter.Write(): %s\n", err)
+			return
+		}
+	}(b)
 
 	return len(b), nil
 }
