@@ -23,10 +23,21 @@ type honeycombHook struct {
 func (hook *honeycombHook) Fire(entry *logrus.Entry) error {
 	eventBuilder := libhoney.NewBuilder()
 	honeycombEvent := eventBuilder.NewEvent()
+	const binKey string = "bin"
+	foundBin := false
 	for eachKey, eachValue := range entry.Data {
 		honeycombEvent.AddField(eachKey, eachValue)
+		if eachKey == binKey {
+			foundBin = true
+		}
 	}
-	honeycombEvent.AddField("ts", entry.Time)
+	// Use cryptic values for these common fields, so there's
+	// less of a chance to conflict with any keys in entry.Data.
+	honeycombEvent.AddField("_ts", entry.Time)
+	honeycombEvent.AddField("_txt", entry.Message)
+	if !foundBin {
+		honeycombEvent.AddField(binKey, os.Args[0])
+	}
 	honeycombEvent.Send()
 	return nil
 }
