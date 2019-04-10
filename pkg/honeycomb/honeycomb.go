@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"io"
 	"os"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"sync"
@@ -36,7 +37,7 @@ func (hook *honeycombHook) Fire(entry *logrus.Entry) error {
 	honeycombEvent.AddField("_ts", entry.Time)
 	honeycombEvent.AddField("_txt", entry.Message)
 	if !foundBin {
-		honeycombEvent.AddField(binKey, os.Args[0])
+		honeycombEvent.AddField(binKey, filepath.Base(os.Args[0]))
 	}
 	honeycombEvent.Send()
 	return nil
