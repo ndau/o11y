@@ -25,20 +25,28 @@ func (hook *honeycombHook) Fire(entry *logrus.Entry) error {
 	eventBuilder := libhoney.NewBuilder()
 	honeycombEvent := eventBuilder.NewEvent()
 	const binKey string = "bin"
+	const levelKey string = "level"
 	foundBin := false
+	foundLevel := false
 	for eachKey, eachValue := range entry.Data {
 		honeycombEvent.AddField(eachKey, eachValue)
-		if eachKey == binKey {
+		switch eachKey {
+		case binKey:
 			foundBin = true
+		case levelKey:
+			foundLevel = true
 		}
+	}
+	if !foundLevel {
+		honeycombEvent.AddField("level", entry.Level.String())
+	}
+	if !foundBin {
+		honeycombEvent.AddField(binKey, filepath.Base(os.Args[0]))
 	}
 	// Use cryptic values for these common fields, so there's
 	// less of a chance to conflict with any keys in entry.Data.
 	honeycombEvent.AddField("_ts", entry.Time)
 	honeycombEvent.AddField("_txt", entry.Message)
-	if !foundBin {
-		honeycombEvent.AddField(binKey, filepath.Base(os.Args[0]))
-	}
 	honeycombEvent.Send()
 	return nil
 }
