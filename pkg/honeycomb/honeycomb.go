@@ -15,6 +15,26 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// Autoflushing is important in a serverless context.
+// Per https://docs.honeycomb.io/getting-data-in/integrations/aws/aws-lambda/ :
+//
+// > Normally, libhoney events are enqueued and sent as batches. By default,
+// > this occurs every 100ms or whenever the queue is full. However, because
+// > Lambda freezes the function instance between invocations, the goroutine
+// > responsible for sending this batch is not guaranteed to execute. To ensure
+// > that events are sent, call Flush before your function returns.
+//
+// However, we don't want to do that unconditionally: in non-serverless
+// contexts, the batching behavior is preferable. Therefore, an environment-
+// controlled variable.
+var autoflush = false
+
+func init() {
+	if os.Getenv("HONEYCOMB_AUTOFLUSH") == "1" {
+		autoflush = true
+	}
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // Honeycomb.io Logrus hook
 ////////////////////////////////////////////////////////////////////////////////
@@ -48,6 +68,9 @@ func (hook *honeycombHook) Fire(entry *logrus.Entry) error {
 	honeycombEvent.AddField("_ts", entry.Time)
 	honeycombEvent.AddField("_txt", entry.Message)
 	honeycombEvent.Send()
+	if autoflush {
+		libhoney.Flush()
+	}
 	return nil
 }
 
