@@ -45,10 +45,14 @@ func init() {
 ////////////////////////////////////////////////////////////////////////////////
 // Honeycomb.io Logrus hook
 ////////////////////////////////////////////////////////////////////////////////
-type honeycombHook struct {
+
+// A HoneycombHook is a hook compatible with logrus which dispatches logged
+// messages to honeycomb.
+type HoneycombHook struct {
 }
 
-func (hook *honeycombHook) Fire(entry *logrus.Entry) error {
+// Fire implements logrus.Hook
+func (hook *HoneycombHook) Fire(entry *logrus.Entry) error {
 	eventBuilder := libhoney.NewBuilder()
 	honeycombEvent := eventBuilder.NewEvent()
 	const binKey string = "bin"
@@ -81,13 +85,19 @@ func (hook *honeycombHook) Fire(entry *logrus.Entry) error {
 	return nil
 }
 
-func (hook *honeycombHook) Levels() []logrus.Level {
+// Levels implements logrus.Hook
+func (hook *HoneycombHook) Levels() []logrus.Level {
 	return []logrus.Level{
 		logrus.InfoLevel,
 		logrus.ErrorLevel,
 		logrus.FatalLevel,
 		logrus.PanicLevel,
 	}
+}
+
+// Flush ensures that all queued messages are dispatched immediately to Honeycomb.
+func (*HoneycombHook) Flush() {
+	libhoney.Flush()
 }
 
 // There are two things we should only do once -- one is initialize the libhoney library,
@@ -124,7 +134,7 @@ func newLogrusHook() (logrus.Hook, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &honeycombHook{}, nil
+	return &HoneycombHook{}, nil
 }
 
 // Setup sets up a logrus logger to send its data to honeycomb instead of
